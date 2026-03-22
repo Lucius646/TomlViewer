@@ -8,7 +8,6 @@ export const sectionOrder: readonly ConfigSectionId[] = [
   "history-notifications",
   "profiles",
   "model-providers",
-  "project-trust",
   "expert-mode",
 ] as const;
 
@@ -31,7 +30,7 @@ export const sectionRegistry: readonly ConfigSectionDefinition[] = [
   {
     id: "search-experience",
     label: "搜索与体验",
-    description: "管理 Web 搜索、项目文档和交互体验相关设置。",
+    description: "管理 web 搜索和交互体验相关设置。",
   },
   {
     id: "history-notifications",
@@ -47,11 +46,6 @@ export const sectionRegistry: readonly ConfigSectionDefinition[] = [
     id: "model-providers",
     label: "Model Providers",
     description: "配置模型提供商和相关映射。",
-  },
-  {
-    id: "project-trust",
-    label: "Projects 信任",
-    description: "管理全局配置中的项目 trust 映射与相关提示。",
   },
   {
     id: "expert-mode",
