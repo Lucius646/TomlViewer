@@ -45,6 +45,19 @@ it("shows global and project mode tabs with the section sidebar", async () => {
   await screen.findByLabelText("主模型");
 });
 
+it("shows a project path input when switching to project scope", async () => {
+  fetchMock.mockResolvedValue(new Response(JSON.stringify(globalPayload), { status: 200 }));
+
+  const user = userEvent.setup();
+
+  render(<ConfigEditorApp initialScope="global" />);
+
+  await user.click(screen.getByRole("tab", { name: "项目配置" }));
+
+  expect(screen.getByLabelText("项目路径")).toBeInTheDocument();
+  expect(screen.getByText("项目配置需要先提供项目路径。")) .toBeInTheDocument();
+});
+
 it("marks the form dirty and saves an edited model value", async () => {
   fetchMock
     .mockResolvedValueOnce(new Response(JSON.stringify(globalPayload), { status: 200 }))

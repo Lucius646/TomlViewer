@@ -480,3 +480,12 @@ code {
   min-height: 320px;
   resize: vertical;
 }
+.config-editor__hero-controls {
+  display: grid;
+  gap: 12px;
+  justify-items: end;
+}
+
+.config-editor__project-path {
+  width: min(420px, 100%);
+}

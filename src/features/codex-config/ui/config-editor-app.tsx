@@ -33,8 +33,9 @@ const orderedSections = getOrderedSections();
 
 export function ConfigEditorApp({ initialScope }: ConfigEditorAppProps) {
   const [scope, setScope] = useState<ConfigApiScope>(initialScope);
+  const [projectPath, setProjectPath] = useState("");
   const [activeSectionId, setActiveSectionId] = useState<ConfigSectionId>(orderedSections[0]?.id ?? "core-model");
-  const editor = useConfigEditor({ scope });
+  const editor = useConfigEditor({ scope, projectPath: projectPath || undefined });
 
   const activeSection = orderedSections.find((section) => section.id === activeSectionId) ?? orderedSections[0];
   const visibleFields = fieldRegistry.filter((field) => field.sectionId === activeSection.id);
@@ -98,7 +99,21 @@ export function ConfigEditorApp({ initialScope }: ConfigEditorAppProps) {
             文件。
           </p>
         </div>
-        <ModeSwitcher scope={scope} onChange={setScope} />
+        <div className="config-editor__hero-controls">
+          <ModeSwitcher scope={scope} onChange={setScope} />
+          {scope === "project" ? (
+            <label className="field-control config-editor__project-path">
+              <span className="field-control__label">项目路径</span>
+              <input
+                aria-label="项目路径"
+                className="field-control__input"
+                placeholder="E:/LuciusProject/TomlViewer"
+                value={projectPath}
+                onChange={(event) => setProjectPath(event.target.value)}
+              />
+            </label>
+          ) : null}
+        </div>
       </header>
 
       <section className="config-editor__layout">
