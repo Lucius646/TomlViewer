@@ -25,6 +25,21 @@ const projectTrustMappingSchema = z.record(
   }),
 );
 
+const profilePresetSchema = z.object({
+  model: z.string().optional(),
+  model_provider: z.string().optional(),
+  approval_policy: approvalPolicySchema.optional(),
+  sandbox_mode: z.enum(["read-only", "workspace-write", "danger-full-access"]).optional(),
+  service_tier: z.enum(["fast", "flex"]).optional(),
+});
+
+const modelProviderSchema = z.object({
+  name: z.string().optional(),
+  base_url: z.string().optional(),
+  wire_api: z.string().optional(),
+  env_key: z.string().optional(),
+});
+
 export const knownFieldSchema = z.object({
   model: z.string().optional(),
   service_tier: z.enum(["fast", "flex"]).optional(),
@@ -37,7 +52,9 @@ export const knownFieldSchema = z.object({
   project_doc_fallback_filenames: z.array(z.string()).optional(),
   "history.persistence": z.enum(["save-all", "none"]).optional(),
   "history.max_bytes": z.number().int().positive().optional(),
+  profiles: z.record(z.string(), profilePresetSchema).optional(),
   profile: z.string().optional(),
+  model_providers: z.record(z.string(), modelProviderSchema).optional(),
   model_provider: z.string().optional(),
   oss_provider: z.string().optional(),
   projects: projectTrustMappingSchema.optional(),

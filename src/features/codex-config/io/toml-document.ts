@@ -11,5 +11,7 @@ export function parseTomlDocument(source: string): TomlDocument {
 }
 
 export function stringifyTomlDocument(document: TomlDocument) {
-  return `${TOML.stringify(document).trimEnd()}\n`;
+  const tomlCompatibleDocument = document as Parameters<typeof TOML.stringify>[0];
+
+  return `${TOML.stringify(tomlCompatibleDocument).trimEnd()}\n`;
 }
