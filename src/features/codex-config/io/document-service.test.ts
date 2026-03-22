@@ -4,8 +4,7 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { saveKnownFieldsToPath } from "./document-service";
-import { loadConfigDocument, saveKnownFields } from "./document-service";
+import { loadConfigDocument, saveKnownFields, saveKnownFieldsToPath } from "./document-service";
 import { resolveGlobalConfigPath, resolveProjectConfigPath } from "./paths";
 
 const tempDirectories: string[] = [];
@@ -47,6 +46,21 @@ describe("document service", () => {
     ).toThrow(/windows/i);
   });
 
+  it("requires an expected mtime before overwriting an existing config file", () => {
+    const directory = mkdtempSync(join(tmpdir(), "codex-config-service-"));
+    const targetPath = join(directory, "config.toml");
+
+    tempDirectories.push(directory);
+    writeFileSync(targetPath, 'model = "gpt-5.4"\n', "utf8");
+
+    expect(() =>
+      saveKnownFieldsToPath({
+        targetPath,
+        knownFields: { model: "gpt-5.4-mini" },
+      }),
+    ).toThrow(/expected mtime/i);
+  });
+
   it("creates a backup before writing an existing config file", () => {
     const directory = mkdtempSync(join(tmpdir(), "codex-config-service-"));
     const targetPath = join(directory, "config.toml");
@@ -54,10 +68,12 @@ describe("document service", () => {
     tempDirectories.push(directory);
     writeFileSync(targetPath, 'model = "gpt-5.4"\nunknown_key = "keep-me"\n', "utf8");
 
+    const loaded = loadConfigDocument(targetPath);
     const result = saveKnownFieldsToPath({
       targetPath,
       knownFields: { model: "gpt-5.4-mini" },
       now: new Date("2026-03-22T08:00:00.000Z"),
+      expectedMtimeMs: loaded.lastModifiedMs,
     });
 
     expect(result.backupPath).toBeDefined();
@@ -75,15 +91,19 @@ describe("document service", () => {
     tempDirectories.push(directory);
     writeFileSync(targetPath, 'model = "gpt-5.4"\n', "utf8");
 
+    const firstLoaded = loadConfigDocument(targetPath);
     const firstSave = saveKnownFieldsToPath({
       targetPath,
       knownFields: { model: "gpt-5.4-mini" },
       now,
+      expectedMtimeMs: firstLoaded.lastModifiedMs,
     });
+    const secondLoaded = loadConfigDocument(targetPath);
     const secondSave = saveKnownFieldsToPath({
       targetPath,
       knownFields: { model: "gpt-5.4" },
       now,
+      expectedMtimeMs: secondLoaded.lastModifiedMs,
     });
 
     expect(firstSave.backupPath).not.toBe(secondSave.backupPath);
@@ -98,9 +118,7 @@ describe("document service", () => {
     tempDirectories.push(directory);
     writeFileSync(targetPath, 'model = "gpt-5.4"\n', "utf8");
 
-    const loaded = loadConfigDocument(targetPath) as ReturnType<typeof loadConfigDocument> & {
-      lastModifiedMs?: number;
-    };
+    const loaded = loadConfigDocument(targetPath);
 
     writeFileSync(targetPath, 'model = "gpt-5.4-mini"\n', "utf8");
 
@@ -109,7 +127,7 @@ describe("document service", () => {
         targetPath,
         knownFields: { model: "gpt-5.4" },
         expectedMtimeMs: loaded.lastModifiedMs,
-      } as Parameters<typeof saveKnownFieldsToPath>[0] & { expectedMtimeMs: number | undefined }),
+      }),
     ).toThrow(/changed/i);
   });
 });

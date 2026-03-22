@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 
@@ -9,6 +10,23 @@ function createTempWritePath(targetPath: string, now: Date) {
   return `${targetPath}.tmp.${process.pid}.${now.getTime()}`;
 }
 
+function escapePowerShellLiteral(value: string) {
+  return value.replace(/'/g, "''");
+}
+
+function moveTempOverTarget(tempPath: string, targetPath: string) {
+  const moveCommand = `Move-Item -LiteralPath '${escapePowerShellLiteral(tempPath)}' -Destination '${escapePowerShellLiteral(targetPath)}' -Force`;
+  const result = spawnSync("powershell.exe", ["-NoProfile", "-Command", moveCommand], {
+    encoding: "utf8",
+    windowsHide: true,
+  });
+
+  if (result.status !== 0) {
+    const errorOutput = [result.stdout, result.stderr].filter(Boolean).join("\n").trim();
+    throw new Error(errorOutput || `Failed to replace ${targetPath} with ${tempPath}.`);
+  }
+}
+
 function replaceFileFromTemp(targetPath: string, rawToml: string, now: Date) {
   const tempPath = createTempWritePath(targetPath, now);
 
@@ -16,10 +34,10 @@ function replaceFileFromTemp(targetPath: string, rawToml: string, now: Date) {
 
   try {
     if (existsSync(targetPath)) {
-      rmSync(targetPath);
+      moveTempOverTarget(tempPath, targetPath);
+    } else {
+      renameSync(tempPath, targetPath);
     }
-
-    renameSync(tempPath, targetPath);
   } catch (error) {
     if (existsSync(tempPath)) {
       rmSync(tempPath, { force: true });
@@ -30,12 +48,12 @@ function replaceFileFromTemp(targetPath: string, rawToml: string, now: Date) {
 }
 
 function assertExpectedMtime(targetPath: string, expectedMtimeMs?: number) {
-  if (expectedMtimeMs === undefined) {
+  if (!existsSync(targetPath)) {
     return;
   }
 
-  if (!existsSync(targetPath)) {
-    throw new Error(`Config file changed before save: ${targetPath}`);
+  if (expectedMtimeMs === undefined) {
+    throw new Error(`Saving an existing config requires expected mtime protection: ${targetPath}`);
   }
 
   const currentMtimeMs = statSync(targetPath).mtimeMs;
