@@ -23,6 +23,23 @@ export interface ConfigSectionDefinition {
   description: string;
 }
 
+export interface ConfigStructuredValueField {
+  keyPath: string;
+  label: string;
+  description: string;
+  kind: ConfigFieldKind;
+  allowedValues?: readonly string[];
+  fields?: readonly ConfigStructuredValueField[];
+}
+
+export interface ConfigStructuredValueDefinition {
+  shape: "object" | "map";
+  description: string;
+  fields?: readonly ConfigStructuredValueField[];
+  mapKeyLabel?: string;
+  mapValue?: ConfigStructuredValueField;
+}
+
 export interface ConfigFieldDefinition {
   keyPath: string;
   sectionId: ConfigSectionId;
@@ -34,7 +51,6 @@ export interface ConfigFieldDefinition {
   allowedValues?: readonly string[];
   risk?: ConfigFieldRisk;
   defaultValue?: string | number | boolean | readonly string[] | Record<string, unknown>;
-  supportsStructuredValue?: boolean;
-  structuredValueDescription?: string;
   dynamicOptionsSource?: ConfigDynamicOptionsSource;
+  structuredValue?: ConfigStructuredValueDefinition;
 }

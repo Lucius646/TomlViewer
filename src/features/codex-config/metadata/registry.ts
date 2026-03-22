@@ -47,9 +47,38 @@ export const fieldRegistry: readonly ConfigFieldDefinition[] = [
     allowedValues: ["untrusted", "on-request", "never"],
     risk: "warning",
     defaultValue: defaultFieldValues.approval_policy,
-    supportsStructuredValue: true,
-    structuredValueDescription:
-      "也支持 approval_policy = { granular = { sandbox_approval = true, rules = false, mcp_elicitations = false } } 这类对象形式。",
+    structuredValue: {
+      shape: "object",
+      description: "对象形式用于按审批类别做细粒度开关控制。",
+      fields: [
+        {
+          keyPath: "granular",
+          label: "细粒度审批",
+          description: "为不同审批类别单独设置是否自动拒绝。",
+          kind: "object",
+          fields: [
+            {
+              keyPath: "sandbox_approval",
+              label: "沙箱审批",
+              description: "控制 sandbox approval 类审批是否自动拒绝。",
+              kind: "boolean",
+            },
+            {
+              keyPath: "rules",
+              label: "规则审批",
+              description: "控制 rules 类审批是否自动拒绝。",
+              kind: "boolean",
+            },
+            {
+              keyPath: "mcp_elicitations",
+              label: "MCP 交互审批",
+              description: "控制 MCP elicitations 是否自动拒绝。",
+              kind: "boolean",
+            },
+          ],
+        },
+      ],
+    },
   },
   {
     keyPath: "sandbox_mode",
@@ -168,7 +197,18 @@ export const fieldRegistry: readonly ConfigFieldDefinition[] = [
     kind: "object",
     risk: "warning",
     defaultValue: {},
-    structuredValueDescription: "键为项目绝对路径，值对象至少包含 trust_level，取值通常是 trusted 或 untrusted。",
+    structuredValue: {
+      shape: "map",
+      description: "键是项目绝对路径，值是该项目的 trust_level 配置对象。",
+      mapKeyLabel: "项目绝对路径",
+      mapValue: {
+        keyPath: "trust_level",
+        label: "信任等级",
+        description: "标记项目是 trusted 还是 untrusted。",
+        kind: "enum",
+        allowedValues: ["trusted", "untrusted"],
+      },
+    },
   },
   {
     keyPath: "developer_instructions",
