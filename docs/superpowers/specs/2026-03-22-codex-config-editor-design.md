@@ -1,89 +1,89 @@
-﻿# Codex Config Editor Design
+﻿# Codex 配置编辑器设计稿
 
-## Goal
+## 目标
 
-Build a Windows-only local web app for editing Codex `config.toml` with a visual UI, field-by-field explanations in Chinese, direct read/write support for real config files, and an optional expert-mode raw TOML fallback.
+构建一个仅支持 Windows 的本地 Web 应用，用可视化界面编辑 Codex `config.toml`，提供逐字段中文说明、真实文件直接读写能力，以及可选的专家模式原始 TOML 兜底编辑区。
 
-The product should let a user who does not understand TOML safely edit:
+该产品应允许不懂 TOML 的用户安全地编辑：
 
-- User/global config: `C:\Users\<user>\.codex\config.toml`
-- Project/local config: `<project>\.codex\config.toml`
+- 用户级 / 全局配置：`C:\Users\<user>\.codex\config.toml`
+- 项目级 / 局部配置：`<project>\.codex\config.toml`
 
-## Product Intent
+## 产品定位
 
-This is not just a generic TOML viewer. It is a Codex configuration editor with product knowledge about:
+这不是一个通用 TOML 查看器，而是一个理解 Codex 配置语义的配置编辑器。它需要知道：
 
-- Config layer precedence
-- Which settings are safer or riskier
-- Which settings are better suited for global vs project scope
-- Which structures are simple fields versus named collections
-- The difference between project-local config files and `[projects."<path>"]` trust mappings in the global config
+- 配置层级与覆盖顺序
+- 哪些设置更安全，哪些设置风险更高
+- 哪些设置更适合放在全局层，哪些更适合项目层
+- 哪些配置是普通字段，哪些配置是命名对象集合
+- 项目内 `.codex\config.toml` 与全局配置中的 `[projects."<path>"]` 信任映射不是同一回事
 
-The UI must assume the user does not know TOML.
+界面必须默认用户不懂 TOML。
 
-## Scope
+## 范围
 
-### In Scope For V1
+### V1 包含
 
-- Windows only
-- Local web app with direct file read/write
-- Global config editor
-- Project config editor
-- Metadata-driven field descriptions in Chinese
-- Visual forms for common and advanced fields
-- Dedicated UI for selected named collections:
+- 仅支持 Windows
+- 本地 Web App，直接读写真实文件
+- 全局配置编辑
+- 项目配置编辑
+- 基于元数据的中文字段说明
+- 常用与高级字段的可视化表单
+- 以下命名集合的专用子界面：
   - `profiles`
   - `model_providers`
-  - `projects` trust mappings
-- Hidden expert-mode raw TOML editor for fallback
-- Preserve unknown keys and unsupported structures during save
-- Automatic backup before write
-- Effective-value/source display for global vs project editing
+  - `projects` 信任映射
+- 默认折叠的专家模式原始 TOML 编辑区
+- 保存时保留未知字段与未支持结构
+- 写回前自动备份
+- 显示全局/项目层的最终生效值来源
 
-### Out of Scope For V1
+### V1 不包含
 
-- macOS/Linux support
-- Desktop shell packaging
-- Full visual management for every complex section
-- Full visual editors for:
+- macOS / Linux 支持
+- 桌面壳打包
+- 所有复杂结构的完整可视化管理
+- 以下部分的完整可视化编辑：
   - `apps`
   - `otel`
   - `skills.config`
-  - all `agents.*` substructures
-  - all `mcp_servers` variants
-- Sync across multiple machines
-- Remote file editing
+  - 全部 `agents.*` 子结构
+  - 全部 `mcp_servers` 变体
+- 多设备同步
+- 远程文件编辑
 
-For unsupported complex sections, V1 should preserve them and expose them through expert mode rather than dropping them.
+对于 V1 不支持可视化管理的复杂结构，要求在保存时保留，并通过专家模式兜底，而不是丢弃。
 
-## User Context
+## 目标用户
 
-The primary user is a Codex CLI user on Windows who wants to change configuration safely without editing TOML manually. The user may understand the meaning of settings only if the UI explains them in plain Chinese.
+核心用户是在 Windows 上使用 Codex CLI、希望安全调整配置、但不愿手写 TOML 的用户。用户通常只有在界面明确解释字段用途时，才能理解配置含义。
 
-## Core UX Principles
+## 核心体验原则
 
-1. Explanation before syntax
-2. Safety before speed
-3. Real config file editing, not import/export only
-4. Layer awareness: global vs project must always be obvious
-5. Unknown-field preservation: unsupported config must survive round trips
+1. 先解释，再编辑
+2. 安全优先于速度
+3. 必须直接编辑真实配置文件，而不是仅支持导入导出
+4. 必须始终明确当前是在编辑全局层还是项目层
+5. 不认识的字段也不能在保存后丢失
 
-## Information Architecture
+## 信息架构
 
-The application uses an explanation-first layout.
+应用采用“说明优先”的布局。
 
-### Top-Level Modes
+### 顶层模式
 
 - `全局配置`
 - `项目配置`
 
-### Main Layout
+### 主布局
 
-- Left sidebar: section navigation
-- Center panel: form-driven editor with concise field descriptions
-- Right panel: current scope, precedence notes, risk warnings, save state, backup info
+- 左侧：分组导航
+- 中间：字段表单与简短说明
+- 右侧：当前层级、覆盖关系、风险提示、保存状态、备份信息
 
-### Sidebar Sections
+### 左侧分组
 
 - 核心模型
 - 推理与输出
@@ -95,38 +95,38 @@ The application uses an explanation-first layout.
 - Projects 信任
 - 专家模式
 
-## Field Explanation Model
+## 字段说明模型
 
-Each visual field is backed by metadata and must display:
+每个可视化字段都必须具备以下信息：
 
-- Chinese label
-- Raw TOML key
-- One-line purpose description
-- Current value
-- Default behavior when unset
-- Recommended scope: global or project
-- Risk level when relevant
-- Allowed values for enum-like settings
-- Expandable details section with longer explanation and example
+- 中文名称
+- 原始 TOML 键名
+- 一句话用途说明
+- 当前值
+- 未设置时的默认行为
+- 推荐放置层级：全局 / 项目
+- 风险等级（如适用）
+- 枚举型字段的可选值说明
+- 可展开的详细说明区域
 
-### Default Display Pattern
+### 默认展示方式
 
-By default, only concise text is shown. The user can expand a field to see:
+默认只展示简短中文说明。用户展开后可看到：
 
-- Detailed explanation
-- Default behavior
-- Example TOML
-- Related settings
-- Scope guidance
-- Safety notes
+- 详细解释
+- 默认行为
+- TOML 示例
+- 相关字段
+- 层级建议
+- 风险提示
 
-This keeps the UI beginner-friendly without hiding important meaning.
+这样既能保持页面可读性，又不会把重要语义藏起来。
 
-## Config Sections and V1 Editing Strategy
+## 配置分区与 V1 编辑策略
 
-### 1. Common Scalar / Small Table Settings
+### 1. 常用标量 / 小型表结构
 
-These should be fully visualized in V1 through forms:
+以下字段在 V1 中应完整支持可视化编辑：
 
 - `model`
 - `model_provider`
@@ -160,21 +160,21 @@ These should be fully visualized in V1 through forms:
 - `sandbox_workspace_write.*`
 - `shell_environment_policy.*`
 
-### 2. Named Collection Editors
+### 2. 命名对象集合编辑器
 
-These require list/detail interfaces instead of plain forms:
+这类配置不适合普通表单，需要“列表 + 详情”的专门子界面。
 
 #### `profiles`
 
-- list all profile names
-- create, rename, delete profile
-- edit supported profile fields via same metadata system
+- 展示所有 profile 名称
+- 支持新增、重命名、删除
+- 通过同一套元数据系统编辑受支持字段
 
 #### `model_providers`
 
-- list provider entries
-- create, edit, delete provider
-- support provider basics in V1:
+- 展示 provider 列表
+- 支持新增、编辑、删除
+- V1 支持的字段包括：
   - `name`
   - `base_url`
   - `wire_api`
@@ -186,191 +186,191 @@ These require list/detail interfaces instead of plain forms:
 
 #### `projects`
 
-Treat this as a global-config trust mapping manager, not a local project config editor.
+这里应被视为“全局配置中的项目信任映射管理器”，而不是项目级配置文件编辑器。
 
-- list trusted/untrusted project paths
-- add/edit/remove trust mapping
-- clearly explain that this is stored in global config
-- clearly explain that this is different from `<project>\.codex\config.toml`
+- 展示受信任 / 不受信任的项目路径
+- 支持新增、编辑、删除映射
+- 明确说明它保存在全局配置里
+- 明确说明它和 `<project>\.codex\config.toml` 不是同一个东西
 
-### 3. Expert-Mode Fallback
+### 3. 专家模式兜底
 
-Expert mode is collapsed by default.
+专家模式默认折叠。
 
-It provides:
+它应提供：
 
-- raw TOML editor
-- unsupported/unknown key visibility
-- warning that it is for advanced users
-- save path still goes through backup + validation + preserve-unknown logic
+- 原始 TOML 文本编辑区
+- 未支持 / 未知字段可见性
+- “仅供高级用户使用”的警告
+- 即使通过原始 TOML 保存，也必须走备份、校验、保留未知字段的同一套保存链路
 
-## Global vs Project Editing Behavior
+## 全局与项目编辑行为
 
-### Global Mode
+### 全局模式
 
-- reads `C:\Users\<user>\.codex\config.toml`
-- allows editing global keys and `projects` trust mappings
+- 读取 `C:\Users\<user>\.codex\config.toml`
+- 允许编辑全局字段与 `projects` 信任映射
 
-### Project Mode
+### 项目模式
 
-- user selects or enters a project path
-- app resolves `<project>\.codex\config.toml`
-- if file does not exist, app offers to create it
-- app explains that project values override global values for that project
-- app warns that project config may be ignored when the project is untrusted
+- 用户输入或选择项目路径
+- 应用解析 `<project>\.codex\config.toml`
+- 若文件不存在，界面提供“创建项目配置”入口
+- 明确提示：项目配置会覆盖该项目下的全局值
+- 明确提示：如果项目是 `untrusted`，Codex 可能不会应用项目级配置
 
-### Precedence Messaging
+### 覆盖关系提示
 
-The UI must explicitly teach:
+界面必须明确教会用户：
 
-- project config overrides global config
-- `[projects."<path>"]` inside the global config is only trust metadata
-- project-local `.codex\config.toml` is a different file
+- 项目配置会覆盖全局配置
+- 全局配置中的 `[projects."<path>"]` 只是信任信息
+- 项目内 `.codex\config.toml` 是另一份真正参与覆盖的配置文件
 
-## Data Model
+## 数据结构分层
 
-The implementation should separate four concerns.
+实现上应至少拆成 4 层。
 
-### 1. Field Metadata Registry
+### 1. 字段元数据注册表
 
-Stores per-field definitions:
+每个字段定义：
 
 - key path
-- label
-- description
-- type
-- default behavior text
-- enum values
-- recommended scope
-- risk flags
-- whether supported in visual mode
+- 中文名称
+- 描述
+- 类型
+- 默认行为说明
+- 枚举值
+- 推荐层级
+- 风险标记
+- 是否支持可视化编辑
 
-### 2. Config Document Service
+### 2. 配置文档服务
 
-Responsible for:
+负责：
 
-- reading files
-- parsing TOML
-- preserving unknown content
-- serializing back to TOML
-- creating backups
-- writing files safely
+- 读取文件
+- 解析 TOML
+- 保留未知内容
+- 序列化写回 TOML
+- 创建备份
+- 安全写文件
 
-### 3. Effective Config Resolver
+### 3. 最终生效值解析器
 
-Responsible for:
+负责：
 
-- showing where a current value comes from
-- distinguishing explicit value vs unset/default
-- showing override behavior in project mode
+- 告诉界面某个值来自哪里
+- 区分显式设置、继承和默认值
+- 在项目模式下展示覆盖关系
 
-### 4. UI Layer
+### 4. UI 层
 
-Responsible for:
+负责：
 
-- rendering forms from metadata
-- showing explanations
-- validation messages
-- dirty state
-- save interactions
+- 根据元数据渲染表单
+- 展示字段说明
+- 展示校验错误
+- 跟踪脏状态
+- 处理保存交互
 
-## File Behavior
+## 文件行为
 
-### Read Paths
+### 读取路径
 
-- global config: `~/.codex/config.toml` on Windows via the current user profile
-- local project config: `<selected-project>\.codex\config.toml`
+- 全局配置：Windows 当前用户目录下的 `~/.codex/config.toml`
+- 项目配置：`<selected-project>\.codex\config.toml`
 
-### Save Behavior
+### 保存行为
 
-Before every write:
+每次写回前必须：
 
-1. validate input
-2. create parent directory if needed
-3. create timestamped backup of the target file if it exists
-4. write updated TOML
-5. surface backup location and modified timestamp in UI
+1. 校验输入
+2. 必要时创建父目录
+3. 若目标文件已存在，创建带时间戳的备份
+4. 写入新的 TOML 内容
+5. 在界面展示备份路径和最近修改时间
 
-### Preservation Rules
+### 保留规则
 
-Saving must not drop:
+保存后不能丢失：
 
-- unknown top-level keys
-- unsupported table structures
-- unedited complex sections
+- 未知顶层键
+- 未支持的表结构
+- 未编辑的复杂配置块
 
-If a section is unsupported visually, the app preserves it and routes edits through expert mode only.
+如果某部分还没有可视化支持，必须保留原始结构，并仅通过专家模式兜底编辑。
 
-## Validation Rules
+## 校验规则
 
-### Hard Validation
+### 强校验
 
-Block save when:
+以下情况必须阻止保存：
 
-- enum value is invalid
-- numeric field is not a valid number
-- boolean field is invalid
-- required values for a created named entry are missing
-- path input is empty where required
+- 枚举值非法
+- 数字字段不是合法数字
+- 布尔字段值非法
+- 新建命名对象时缺少必要字段
+- 必填路径为空
 
-### Soft Validation
+### 软校验
 
-Warn but still allow save when:
+以下情况允许保存，但必须给出明显提示：
 
-- a field is edited in a less-recommended scope
-- a risky value is selected, such as highly permissive sandboxing
-- project config exists for a path that is not trusted
+- 在不推荐的层级编辑某字段
+- 选择高风险值，例如更宽松的沙箱权限
+- 当前项目未被信任，却正在编辑项目级配置
 
-## Error Handling
+## 错误处理
 
-The UI should provide explicit, user-readable errors for:
+界面应能明确展示这些错误：
 
-- config file missing
-- config file unreadable
-- TOML parse failure
-- invalid field value
-- backup failure
-- write failure
+- 配置文件不存在
+- 配置文件不可读
+- TOML 解析失败
+- 字段值非法
+- 备份失败
+- 写入失败
 
-When TOML cannot be parsed, the app should still show the file problem clearly and offer expert-mode recovery instead of silently overwriting the file.
+当 TOML 无法解析时，不能静默覆盖，应清楚告诉用户问题所在，并提供专家模式恢复入口。
 
-## Testing Strategy
+## 测试策略
 
-V1 should include automated coverage for:
+V1 至少要覆盖：
 
-- loading an existing global config
-- loading a missing project config
-- creating a new project `.codex\config.toml`
-- editing a supported scalar field
-- editing a supported nested field
-- editing `projects` trust mappings
-- preserving unknown keys after save
-- rejecting invalid enum values
-- backup creation before write
-- showing correct effective source in project mode
+- 读取现有全局配置
+- 读取不存在的项目配置
+- 新建项目 `.codex\config.toml`
+- 编辑受支持的标量字段
+- 编辑受支持的嵌套字段
+- 编辑 `projects` 信任映射
+- 保存后未知字段仍被保留
+- 非法枚举值被拦截
+- 写回前成功创建备份
+- 项目模式下正确显示值来源
 
-## Design Decisions Locked In
+## 已锁定的设计决策
 
-- Windows only
-- local web app
-- explanation-first UI
-- concise descriptions by default, expandable details on demand
-- both global and project config supported
-- expert mode available but hidden by default
-- A-layout chosen: explanation-first, not TOML-preview-first
+- 仅支持 Windows
+- 采用本地 Web App
+- 使用说明优先布局
+- 默认展示简短说明，详情按需展开
+- 同时支持全局与项目配置
+- 专家模式默认隐藏
+- 首页布局采用 A 方案，不以 TOML 实时预览为中心
 
-## Risks
+## 风险
 
-- Codex config evolves over time, so metadata must be easy to update
-- TOML round-trip preservation can be tricky if parser/writer choice is naive
-- some advanced sections are too complex for V1 and must be preserved safely
+- Codex 配置会持续演进，字段元数据必须易于扩展
+- TOML 回写时若库选型不当，未知结构保留会出问题
+- 某些高级结构对 V1 来说过于复杂，必须保证“不会丢”优先于“全部可视化”
 
-## References
+## 参考
 
 - OpenAI Codex Config Basics
 - OpenAI Codex Config Reference
 - OpenAI Codex Sample Configuration
-- Local user config observed during design:
+- 设计阶段观测到的本机用户配置：
   - `C:\Users\lucius\.codex\config.toml`
-- User-provided field notes:
+- 用户提供的字段整理：
   - `E:\LuciusProject\TomlViewer\部分toml属性.md`
