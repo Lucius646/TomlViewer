@@ -7,6 +7,14 @@ export interface EffectiveConfigEntry {
   source: EffectiveValueSource;
 }
 
+function cloneResolvedValue(value: unknown) {
+  if (typeof value === "object" && value !== null) {
+    return structuredClone(value);
+  }
+
+  return value;
+}
+
 function getValueAtKeyPath(source: Record<string, unknown>, keyPath: string) {
   if (Object.prototype.hasOwnProperty.call(source, keyPath)) {
     return source[keyPath];
@@ -51,7 +59,10 @@ export function resolveEffectiveConfig(
     }
 
     if (field.defaultValue !== undefined) {
-      resolvedEntries[field.keyPath] = { value: field.defaultValue, source: "default" };
+      resolvedEntries[field.keyPath] = {
+        value: cloneResolvedValue(field.defaultValue),
+        source: "default",
+      };
       continue;
     }
 

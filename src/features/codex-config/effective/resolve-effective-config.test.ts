@@ -43,6 +43,19 @@ describe("resolveEffectiveConfig", () => {
     expect(resolved["windows.sandbox"].value).toBe("elevated");
   });
 
+  it("uses configured defaults without sharing mutable references", () => {
+    const firstResolved = resolveEffectiveConfig({}, {});
+    const secondResolved = resolveEffectiveConfig({}, {});
+    const firstFallbackFilenames = firstResolved.project_doc_fallback_filenames.value as string[];
+
+    expect(firstResolved.project_doc_max_bytes.value).toBe(32768);
+    expect(firstFallbackFilenames).toEqual([]);
+
+    firstFallbackFilenames.push("AGENTS.md");
+
+    expect(secondResolved.project_doc_fallback_filenames.value).toEqual([]);
+  });
+
   it("falls back to registry defaults when neither scope sets a value", () => {
     const resolved = resolveEffectiveConfig({}, {});
 

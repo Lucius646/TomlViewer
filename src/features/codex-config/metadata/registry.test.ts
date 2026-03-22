@@ -3,12 +3,23 @@ import { describe, expect, it } from "vitest";
 import { fieldRegistry } from "./registry";
 
 describe("fieldRegistry", () => {
-  it("defines the model field with Chinese description and global scope guidance", () => {
-    const field = fieldRegistry.find((item) => item.keyPath === "model");
+  it("defines structured and dynamic metadata for key config fields", () => {
+    const modelField = fieldRegistry.find((item) => item.keyPath === "model");
+    const approvalPolicyField = fieldRegistry.find((item) => item.keyPath === "approval_policy");
+    const modelProviderField = fieldRegistry.find((item) => item.keyPath === "model_provider");
+    const projectDocField = fieldRegistry.find((item) => item.keyPath === "project_doc_max_bytes");
 
-    expect(field?.label).toBe("主模型");
-    expect(field?.recommendedScope).toBe("global");
-    expect(field?.allowedValues).toContain("gpt-5.4");
-    expect(field?.defaultBehavior).toContain("默认使用 gpt-5.4");
+    expect(modelField?.label).toBe("主模型");
+    expect(modelField?.recommendedScope).toBe("global");
+    expect(modelField?.allowedValues).toContain("gpt-5.4");
+    expect(modelField?.defaultBehavior).toContain("gpt-5.4");
+
+    expect(approvalPolicyField?.structuredValue?.shape).toBe("object");
+    expect(approvalPolicyField?.structuredValue?.fields?.[0]?.keyPath).toBe("granular");
+
+    expect(modelProviderField?.dynamicOptionsSource).toBe("model_providers");
+
+    expect(projectDocField?.sectionId).toBe("search-experience");
+    expect(projectDocField?.defaultValue).toBe(32768);
   });
 });
