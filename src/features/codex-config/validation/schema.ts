@@ -1,15 +1,20 @@
 import { z } from "zod";
 
+const granularApprovalSchema = z
+  .object({
+    sandbox_approval: z.boolean().optional(),
+    rules: z.boolean().optional(),
+    mcp_elicitations: z.boolean().optional(),
+  })
+  .refine(
+    (value) => Object.values(value).some((entry) => entry !== undefined),
+    "approval_policy.granular must declare at least one rule",
+  );
+
 const approvalPolicySchema = z.union([
   z.enum(["untrusted", "on-request", "never"]),
   z.object({
-    granular: z
-      .object({
-        sandbox_approval: z.boolean().optional(),
-        rules: z.boolean().optional(),
-        mcp_elicitations: z.boolean().optional(),
-      })
-      .optional(),
+    granular: granularApprovalSchema,
   }),
 ]);
 

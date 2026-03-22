@@ -15,6 +15,10 @@ describe("known field validation", () => {
       }).approval_policy,
     ).toEqual({ granular: { sandbox_approval: true } });
   });
+
+  it("rejects empty structured approval_policy values", () => {
+    expect(() => validateKnownFields({ approval_policy: {} })).toThrow(/approval_policy/i);
+  });
 });
 
 describe("resolveEffectiveConfig", () => {
@@ -27,6 +31,16 @@ describe("resolveEffectiveConfig", () => {
     expect(resolved.model.source).toBe("project");
     expect(resolved.model.value).toBe("gpt-5.4-mini");
     expect(resolved["windows.sandbox"].source).toBe("global");
+  });
+
+  it("reads nested parsed objects when resolving key paths", () => {
+    const resolved = resolveEffectiveConfig(
+      { windows: { sandbox: "elevated" } },
+      {},
+    );
+
+    expect(resolved["windows.sandbox"].source).toBe("global");
+    expect(resolved["windows.sandbox"].value).toBe("elevated");
   });
 
   it("falls back to registry defaults when neither scope sets a value", () => {
