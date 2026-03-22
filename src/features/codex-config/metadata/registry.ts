@@ -47,6 +47,9 @@ export const fieldRegistry: readonly ConfigFieldDefinition[] = [
     allowedValues: ["untrusted", "on-request", "never"],
     risk: "warning",
     defaultValue: defaultFieldValues.approval_policy,
+    supportsStructuredValue: true,
+    structuredValueDescription:
+      "也支持 approval_policy = { granular = { sandbox_approval = true, rules = false, mcp_elicitations = false } } 这类对象形式。",
   },
   {
     keyPath: "sandbox_mode",
@@ -132,17 +135,18 @@ export const fieldRegistry: readonly ConfigFieldDefinition[] = [
     defaultBehavior: "未设置时不会启用任何命名 profile。",
     recommendedScope: "global",
     kind: "string",
+    dynamicOptionsSource: "profiles",
   },
   {
     keyPath: "model_provider",
     sectionId: "model-providers",
     label: "模型提供商",
-    description: "默认模型提供商标识。",
+    description: "默认模型提供商标识，填写的是 [model_providers] 中定义的 provider id。",
     defaultBehavior: "未设置时使用 openai 作为默认提供商。",
     recommendedScope: "global",
-    kind: "enum",
-    allowedValues: ["openai"],
+    kind: "string",
     defaultValue: defaultFieldValues.model_provider,
+    dynamicOptionsSource: "model_providers",
   },
   {
     keyPath: "oss_provider",
@@ -152,6 +156,7 @@ export const fieldRegistry: readonly ConfigFieldDefinition[] = [
     defaultBehavior: "未设置时进入 --oss 会话会提示选择 provider。",
     recommendedScope: "global",
     kind: "string",
+    dynamicOptionsSource: "model_providers",
   },
   {
     keyPath: "projects",
@@ -163,6 +168,7 @@ export const fieldRegistry: readonly ConfigFieldDefinition[] = [
     kind: "object",
     risk: "warning",
     defaultValue: {},
+    structuredValueDescription: "键为项目绝对路径，值对象至少包含 trust_level，取值通常是 trusted 或 untrusted。",
   },
   {
     keyPath: "developer_instructions",

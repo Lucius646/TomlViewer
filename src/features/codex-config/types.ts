@@ -4,6 +4,8 @@ export type ConfigFieldKind = "string" | "number" | "boolean" | "enum" | "array"
 
 export type ConfigFieldRisk = "normal" | "warning" | "danger";
 
+export type ConfigDynamicOptionsSource = "profiles" | "model_providers";
+
 export type ConfigSectionId =
   | "core-model"
   | "reasoning-output"
@@ -32,4 +34,7 @@ export interface ConfigFieldDefinition {
   allowedValues?: readonly string[];
   risk?: ConfigFieldRisk;
   defaultValue?: string | number | boolean | readonly string[] | Record<string, unknown>;
+  supportsStructuredValue?: boolean;
+  structuredValueDescription?: string;
+  dynamicOptionsSource?: ConfigDynamicOptionsSource;
 }
