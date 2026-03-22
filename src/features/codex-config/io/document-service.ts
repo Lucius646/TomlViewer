@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 
+import { fieldRegistry } from "../metadata/registry";
 import { createBackupIfExists } from "./backup";
 import { mergeKnownFields } from "./merge-known-fields";
 import { parseTomlDocument, stringifyTomlDocument } from "./toml-document";
@@ -63,6 +64,41 @@ function assertExpectedMtime(targetPath: string, expectedMtimeMs?: number) {
   }
 }
 
+function cloneValue<T>(value: T): T {
+  if (typeof value === "object" && value !== null) {
+    return structuredClone(value);
+  }
+
+  return value;
+}
+
+function getValueAtKeyPath(source: Record<string, unknown>, keyPath: string) {
+  if (Object.prototype.hasOwnProperty.call(source, keyPath)) {
+    return source[keyPath];
+  }
+
+  const segments = keyPath.split(".");
+  let current: unknown = source;
+
+  for (const segment of segments) {
+    if (typeof current !== "object" || current === null || Array.isArray(current)) {
+      return undefined;
+    }
+
+    if (!Object.prototype.hasOwnProperty.call(current, segment)) {
+      return undefined;
+    }
+
+    current = (current as Record<string, unknown>)[segment];
+  }
+
+  return current;
+}
+
+function normalizeRawToml(rawToml: string) {
+  return `${rawToml.trimEnd()}\n`;
+}
+
 export interface LoadedConfigDocument {
   targetPath: string;
   exists: boolean;
@@ -78,7 +114,14 @@ export interface SaveKnownFieldsToPathParams {
   expectedMtimeMs?: number;
 }
 
-export interface SaveKnownFieldsToPathResult {
+export interface SaveRawTomlToPathParams {
+  targetPath: string;
+  rawToml: string;
+  now?: Date;
+  expectedMtimeMs?: number;
+}
+
+export interface SaveConfigDocumentResult {
   backupPath?: string;
   rawToml: string;
   lastModifiedMs: number;
@@ -98,6 +141,20 @@ export function loadConfigDocument(targetPath: string): LoadedConfigDocument {
   };
 }
 
+export function extractKnownFields(source: Record<string, unknown>) {
+  const knownFields: Record<string, unknown> = {};
+
+  for (const field of fieldRegistry) {
+    const value = getValueAtKeyPath(source, field.keyPath);
+
+    if (value !== undefined) {
+      knownFields[field.keyPath] = cloneValue(value);
+    }
+  }
+
+  return knownFields;
+}
+
 export function saveKnownFields(source: string, knownFields: Record<string, unknown>) {
   const parsedDocument = parseTomlDocument(source);
   const mergedDocument = mergeKnownFields(parsedDocument, knownFields);
@@ -110,7 +167,7 @@ export function saveKnownFieldsToPath({
   knownFields,
   now = new Date(),
   expectedMtimeMs,
-}: SaveKnownFieldsToPathParams): SaveKnownFieldsToPathResult {
+}: SaveKnownFieldsToPathParams): SaveConfigDocumentResult {
   mkdirSync(dirname(targetPath), { recursive: true });
   assertExpectedMtime(targetPath, expectedMtimeMs);
 
@@ -123,6 +180,30 @@ export function saveKnownFieldsToPath({
   return {
     backupPath,
     rawToml,
+    lastModifiedMs: statSync(targetPath).mtimeMs,
+  };
+}
+
+export function saveRawTomlToPath({
+  targetPath,
+  rawToml,
+  now = new Date(),
+  expectedMtimeMs,
+}: SaveRawTomlToPathParams): SaveConfigDocumentResult {
+  mkdirSync(dirname(targetPath), { recursive: true });
+  assertExpectedMtime(targetPath, expectedMtimeMs);
+
+  const normalizedToml = normalizeRawToml(rawToml);
+
+  parseTomlDocument(normalizedToml);
+
+  const backupPath = createBackupIfExists(targetPath, now) ?? undefined;
+
+  replaceFileFromTemp(targetPath, normalizedToml, now);
+
+  return {
+    backupPath,
+    rawToml: normalizedToml,
     lastModifiedMs: statSync(targetPath).mtimeMs,
   };
 }

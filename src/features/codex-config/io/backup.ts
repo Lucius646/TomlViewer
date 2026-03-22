@@ -1,4 +1,5 @@
-import { constants, copyFileSync, existsSync } from "node:fs";
+import { basename, dirname, join } from "node:path";
+import { constants, copyFileSync, existsSync, readdirSync } from "node:fs";
 
 function formatBackupTimestamp(now: Date) {
   return now.toISOString().replace(/[:]/g, "-");
@@ -33,4 +34,19 @@ export function createBackupIfExists(targetPath: string, now = new Date()) {
       attempt += 1;
     }
   }
+}
+
+export function listBackupPaths(targetPath: string) {
+  const parentDirectory = dirname(targetPath);
+
+  if (!existsSync(parentDirectory)) {
+    return [];
+  }
+
+  const backupPrefix = `${basename(targetPath)}.bak.`;
+
+  return readdirSync(parentDirectory)
+    .filter((entry) => entry.startsWith(backupPrefix))
+    .sort((left, right) => right.localeCompare(left))
+    .map((entry) => join(parentDirectory, entry));
 }
