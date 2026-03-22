@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -119,8 +119,10 @@ describe("document service", () => {
     writeFileSync(targetPath, 'model = "gpt-5.4"\n', "utf8");
 
     const loaded = loadConfigDocument(targetPath);
+    const nextModifiedAt = new Date((loaded.lastModifiedMs ?? Date.now()) + 2000);
 
     writeFileSync(targetPath, 'model = "gpt-5.4-mini"\n', "utf8");
+    utimesSync(targetPath, nextModifiedAt, nextModifiedAt);
 
     expect(() =>
       saveKnownFieldsToPath({
