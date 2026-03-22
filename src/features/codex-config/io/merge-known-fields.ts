@@ -17,8 +17,10 @@ function setValueAtKeyPath(target: TomlDocument, keyPath: string, value: unknown
   for (const segment of segments) {
     const nextValue = current[segment];
 
-    if (!isObject(nextValue)) {
+    if (nextValue === undefined) {
       current[segment] = {};
+    } else if (!isObject(nextValue)) {
+      throw new Error(`Cannot write nested key path "${keyPath}" because "${segment}" is not a TOML table.`);
     }
 
     current = current[segment] as Record<string, unknown>;

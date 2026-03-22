@@ -4,8 +4,9 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
+import { saveKnownFieldsToPath } from "./document-service";
+import { loadConfigDocument, saveKnownFields } from "./document-service";
 import { resolveGlobalConfigPath, resolveProjectConfigPath } from "./paths";
-import { saveKnownFields, saveKnownFieldsToPath } from "./document-service";
 
 const tempDirectories: string[] = [];
 
@@ -36,6 +37,16 @@ describe("document service", () => {
     expect(updated).toContain('sandbox = "elevated"');
   });
 
+  it("rejects nested writes when an intermediate key is not an object", () => {
+    const original = 'windows = "not-a-table"\n';
+
+    expect(() =>
+      saveKnownFields(original, {
+        "windows.sandbox": "elevated",
+      }),
+    ).toThrow(/windows/i);
+  });
+
   it("creates a backup before writing an existing config file", () => {
     const directory = mkdtempSync(join(tmpdir(), "codex-config-service-"));
     const targetPath = join(directory, "config.toml");
@@ -54,5 +65,51 @@ describe("document service", () => {
     expect(readFileSync(result.backupPath!, "utf8")).toContain('model = "gpt-5.4"');
     expect(readFileSync(targetPath, "utf8")).toContain('unknown_key = "keep-me"');
     expect(readFileSync(targetPath, "utf8")).toContain('model = "gpt-5.4-mini"');
+  });
+
+  it("creates unique backup names when the timestamp collides", () => {
+    const directory = mkdtempSync(join(tmpdir(), "codex-config-service-"));
+    const targetPath = join(directory, "config.toml");
+    const now = new Date("2026-03-22T08:00:00.000Z");
+
+    tempDirectories.push(directory);
+    writeFileSync(targetPath, 'model = "gpt-5.4"\n', "utf8");
+
+    const firstSave = saveKnownFieldsToPath({
+      targetPath,
+      knownFields: { model: "gpt-5.4-mini" },
+      now,
+    });
+    const secondSave = saveKnownFieldsToPath({
+      targetPath,
+      knownFields: { model: "gpt-5.4" },
+      now,
+    });
+
+    expect(firstSave.backupPath).not.toBe(secondSave.backupPath);
+    expect(existsSync(firstSave.backupPath!)).toBe(true);
+    expect(existsSync(secondSave.backupPath!)).toBe(true);
+  });
+
+  it("rejects saving when the file changed after it was loaded", () => {
+    const directory = mkdtempSync(join(tmpdir(), "codex-config-service-"));
+    const targetPath = join(directory, "config.toml");
+
+    tempDirectories.push(directory);
+    writeFileSync(targetPath, 'model = "gpt-5.4"\n', "utf8");
+
+    const loaded = loadConfigDocument(targetPath) as ReturnType<typeof loadConfigDocument> & {
+      lastModifiedMs?: number;
+    };
+
+    writeFileSync(targetPath, 'model = "gpt-5.4-mini"\n', "utf8");
+
+    expect(() =>
+      saveKnownFieldsToPath({
+        targetPath,
+        knownFields: { model: "gpt-5.4" },
+        expectedMtimeMs: loaded.lastModifiedMs,
+      } as Parameters<typeof saveKnownFieldsToPath>[0] & { expectedMtimeMs: number | undefined }),
+    ).toThrow(/changed/i);
   });
 });
