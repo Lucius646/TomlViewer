@@ -1,4 +1,4 @@
-﻿export type ConfigScope = "global" | "project" | "either";
+export type ConfigScope = "global" | "project" | "either";
 
 export type ConfigFieldKind = "string" | "number" | "boolean" | "enum" | "array" | "object";
 
@@ -26,6 +26,7 @@ export interface ConfigFieldDefinition {
   sectionId: ConfigSectionId;
   label: string;
   description: string;
+  defaultBehavior: string;
   recommendedScope: ConfigScope;
   kind: ConfigFieldKind;
   allowedValues?: readonly string[];

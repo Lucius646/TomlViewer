@@ -1,4 +1,4 @@
-﻿import type { ConfigSectionDefinition, ConfigSectionId } from "../types";
+import type { ConfigSectionDefinition, ConfigSectionId } from "../types";
 
 export const sectionOrder: readonly ConfigSectionId[] = [
   "core-model",
@@ -31,7 +31,7 @@ export const sectionRegistry: readonly ConfigSectionDefinition[] = [
   {
     id: "search-experience",
     label: "搜索与体验",
-    description: "管理 web 搜索和交互体验相关设置。",
+    description: "管理 Web 搜索、项目文档和交互体验相关设置。",
   },
   {
     id: "history-notifications",
@@ -51,7 +51,7 @@ export const sectionRegistry: readonly ConfigSectionDefinition[] = [
   {
     id: "project-trust",
     label: "Projects 信任",
-    description: "管理项目文档与信任相关的全局约束。",
+    description: "管理全局配置中的项目 trust 映射与相关提示。",
   },
   {
     id: "expert-mode",
